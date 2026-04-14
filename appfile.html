@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Flappy Game</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+        text-align: center;
+        background: #86ff68;
+    }
+
+    #gameCanvas {
+        background: #50c8d5;
+        display: block;
+        margin: 0 auto;
+        border: 2px solid #333;
+    }
+
+    #startBtn {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 10px 20px;
+        font-size: 18px;
+        cursor: pointer;
+        z-index: 10;
+    }
+
+    #score {
+        position: absolute;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        font-size: 24px;
+        color: white;
+        font-weight: bold;
+    }
+</style>
+</head>
+<body>
+<br>
+<button id="startBtn">Start Game</button>
+<div id="score">Score: 0</div>
+<canvas id="gameCanvas" width="400" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let bird, gravity, lift, velocity;
+let pipes;
+let frame;
+let gameRunning;
+let score;
+
+const startBtn = document.getElementById("startBtn");
+const scoreDisplay = document.getElementById("score");
+
+function initGame() {
+    bird = { x: 80, y: 250, radius: 12 };
+    gravity = 0.5;
+    lift = -8;
+    velocity = 0;
+    pipes = [];
+    frame = 0;
+    gameRunning = true;
+    score = 0;
+    scoreDisplay.textContent = "Score: 0";
+}
+
+function drawBird() {
+    ctx.fillStyle = "yellow";
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function drawPipes() {
+    ctx.fillStyle = "green";
+    pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, pipe.width, pipe.top);
+        ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipe.width, pipe.bottom);
+    });
+}
+
+function updatePipes() {
+    if (frame % 90 === 0) {
+        let top = Math.random() * 250 + 50;
+        let gap = 140;
+        pipes.push({
+            x: canvas.width,
+            width: 50,
+            top: top,
+            bottom: canvas.height - top - gap,
+            passed: false
+        });
+    }
+
+    pipes.forEach(pipe => {
+        pipe.x -= 2;
+
+        // Score
+        if (!pipe.passed && pipe.x + pipe.width < bird.x) {
+            score++;
+            scoreDisplay.textContent = "Score: " + score;
+            pipe.passed = true;
+        }
+
+        // Collision
+        if (
+            bird.x + bird.radius > pipe.x &&
+            bird.x - bird.radius < pipe.x + pipe.width &&
+            (bird.y - bird.radius < pipe.top ||
+             bird.y + bird.radius > canvas.height - pipe.bottom)
+        ) {
+            endGame();
+        }
+    });
+
+    pipes = pipes.filter(pipe => pipe.x + pipe.width > 0);
+}
+
+function drawGround() {
+    ctx.fillStyle = "#ded895";
+    ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+}
+
+function updateBird() {
+    velocity += gravity;
+    bird.y += velocity;
+
+    if (bird.y + bird.radius > canvas.height - 20 || bird.y - bird.radius < 0) {
+        endGame();
+    }
+}
+
+function gameLoop() {
+    if (!gameRunning) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    updateBird();
+    updatePipes();
+
+    drawBird();
+    drawPipes();
+    drawGround();
+
+    frame++;
+    requestAnimationFrame(gameLoop);
+}
+
+function endGame() {
+    gameRunning = false;
+    startBtn.style.display = "block";
+    startBtn.textContent = "Restart Game";
+}
+
+document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && gameRunning) {
+        velocity = lift;
+    }
+});
+
+startBtn.addEventListener("click", () => {
+    initGame();
+    startBtn.style.display = "none";
+    gameLoop();
+});
+</script>
+<p>Press SPACE to jump! <a href="realScratch.html">Back to Scratch Page</a></p>
+</body>
+</html>
